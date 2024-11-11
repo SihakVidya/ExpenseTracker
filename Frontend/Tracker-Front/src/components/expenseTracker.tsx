@@ -30,8 +30,10 @@ import {
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast"; // Import the useToast hook
 
 const ExpenseTracker = () => {
+  const { toast } = useToast(); // Initialize toast
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
@@ -65,6 +67,12 @@ const ExpenseTracker = () => {
       setIsDialogOpen(false); // Close the dialog
       const response = await getExpenses(); // Refresh the expenses list
       setExpenses(response.data);
+
+      // Show success toast
+      toast({
+        title: "Expense Added",
+        description: "Your expense was added successfully!",
+      });
     } catch (error) {
       console.error("Error adding expense:", error);
     }
@@ -73,11 +81,16 @@ const ExpenseTracker = () => {
   const handleDeleteExpense = async () => {
     if (selectedExpenseId === null) return;
     try {
-      await deleteExpense(selectedExpenseId); // Call delete service
-      setIsConfirmDialogOpen(false); // Close the confirmation dialog
+      await deleteExpense(selectedExpenseId);
+      setIsConfirmDialogOpen(false);
       const response = await getExpenses(); // Refresh the expenses list
       setExpenses(response.data);
-      setSelectedExpenseId(null); // Clear the selected expense ID
+      setSelectedExpenseId(null);
+      toast({
+        variant: "destructive",
+        title: "Expense Deleted",
+        description: "Your expense was deleted successfully!",
+      });
     } catch (error) {
       console.error("Error deleting expense:", error);
     }
