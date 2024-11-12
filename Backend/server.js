@@ -57,6 +57,23 @@ app.delete("/api/expenses/:id", async (req, res) => {
   }
 });
 
+app.put("/api/expenses/:id", async (req, res) => {
+  const { id } = req.params;
+  const { description, amount, date } = req.body;
+  try {
+    const result = await pool.query(
+      "UPDATE expenses SET description = $1, amount = $2, date = $3 WHERE id = $4 RETURNING *",
+      [description, amount, date, id]
+    );
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Expense not found" });
+    }
+    res.json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

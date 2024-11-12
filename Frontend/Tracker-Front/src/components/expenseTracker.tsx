@@ -1,13 +1,14 @@
-// src/pages/ExpenseTracker.tsx
 import { useEffect, useState } from "react";
 import {
   getExpenses,
   addExpense,
   deleteExpense,
+  updateExpense, // Add this import
   Expense,
 } from "../services/expenseService";
 import { Button } from "@/components/ui/button";
-import { MdDeleteForever } from "react-icons/md";
+import { MdDeleteForever, MdEdit } from "react-icons/md"; // Add edit icon
+import { FaRegEdit } from "react-icons/fa";
 
 import {
   Dialog,
@@ -21,7 +22,6 @@ import {
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -39,6 +39,7 @@ const ExpenseTracker = () => {
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false); // New state for edit dialog
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [selectedExpenseId, setSelectedExpenseId] = useState<number | null>(
     null
@@ -64,8 +65,8 @@ const ExpenseTracker = () => {
       setDescription("");
       setAmount("");
       setDate("");
-      setIsDialogOpen(false); // Close the dialog
-      const response = await getExpenses(); // Refresh the expenses list
+      setIsDialogOpen(false);
+      const response = await getExpenses();
       setExpenses(response.data);
 
       // Show success toast
@@ -78,12 +79,39 @@ const ExpenseTracker = () => {
     }
   };
 
+  const handleEditExpense = async () => {
+    if (!selectedExpenseId || !description || !amount || !date) return;
+    const updatedExpense = {
+      id: selectedExpenseId,
+      description,
+      amount: parseFloat(amount),
+      date,
+    };
+    try {
+      await updateExpense(updatedExpense);
+      setDescription("");
+      setAmount("");
+      setDate("");
+      setIsEditDialogOpen(false);
+      const response = await getExpenses();
+      setExpenses(response.data);
+
+      // Show success toast
+      toast({
+        title: "Expense Updated",
+        description: "Your expense was updated successfully!",
+      });
+    } catch (error) {
+      console.error("Error updating expense:", error);
+    }
+  };
+
   const handleDeleteExpense = async () => {
     if (selectedExpenseId === null) return;
     try {
       await deleteExpense(selectedExpenseId);
       setIsConfirmDialogOpen(false);
-      const response = await getExpenses(); // Refresh the expenses list
+      const response = await getExpenses();
       setExpenses(response.data);
       setSelectedExpenseId(null);
       toast({
@@ -94,6 +122,14 @@ const ExpenseTracker = () => {
     } catch (error) {
       console.error("Error deleting expense:", error);
     }
+  };
+
+  const openEditDialog = (expense: Expense) => {
+    setSelectedExpenseId(expense.id);
+    setDescription(expense.description);
+    setAmount(expense.amount.toString());
+    setDate(expense.date);
+    setIsEditDialogOpen(true);
   };
 
   const openConfirmDialog = (expenseId: number) => {
@@ -131,8 +167,12 @@ const ExpenseTracker = () => {
                   <Button
                     variant="destructive"
                     onClick={() => openConfirmDialog(expense.id)}
+                    className="mr-2"
                   >
                     <MdDeleteForever />
+                  </Button>
+                  <Button onClick={() => openEditDialog(expense)}>
+                    <FaRegEdit />
                   </Button>
                 </TableCell>
               </TableRow>
@@ -193,6 +233,61 @@ const ExpenseTracker = () => {
                 Cancel
               </Button>
               <Button onClick={handleAddExpense}>Save Expense</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Expense Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Edit Expense</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="description" className="text-right">
+                  Description
+                </Label>
+                <Input
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="amount" className="text-right">
+                  Amount
+                </Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="date" className="text-right">
+                  Date
+                </Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="col-span-3"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsEditDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleEditExpense}>Update Expense</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
